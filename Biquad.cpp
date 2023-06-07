@@ -27,8 +27,9 @@
 
  */
 
-#include "Biquad.h"
 #include <math.h>
+
+#include "Biquad.h"
 
 #pragma mark Biquad
 
@@ -66,30 +67,33 @@ void Biquad::DF2TBiquad(double B0, double B1, double B2,
 
 #pragma mark - BiquadChain
 
-void BiquadChain::allocate(int count)
+void BiquadChain::allocate(uint32_t count)
 {
 
   numFilters = count;
-  _yn.resize(numFilters);
-  _yn1.resize(numFilters);
-  _yn2.resize(numFilters);
+  m_yn.resize(numFilters);
+  m_yn1.resize(numFilters);
+  m_yn2.resize(numFilters);
 
   // Fourth order sections
-  _yn3.resize(numFilters);
-  _yn4.resize(numFilters);
+  m_yn3.resize(numFilters);
+  m_yn4.resize(numFilters);
 }
 
 BiquadChain::BiquadChain() : numFilters(0)
 {
 }
 
-BiquadChain::BiquadChain(int count)
+BiquadChain::BiquadChain(uint32_t count)
 {
   allocate(count);
   reset();
 }
+BiquadChain::~BiquadChain()
+{
+}
 
-void BiquadChain::resize(int count)
+void BiquadChain::resize(uint32_t count)
 {
   allocate(count);
 }
@@ -97,47 +101,55 @@ void BiquadChain::resize(int count)
 void BiquadChain::reset()
 {
 
-  _xn1 = 0;
-  _xn2 = 0;
+  m_xn1 = 0;
+  m_xn2 = 0;
 
-  for (int i = 0; i < numFilters; i++)
+  for (uint32_t i = 0; i < numFilters; i++)
   {
-    _yn[i] = 0;
-    _yn1[i] = 0;
-    _yn2[i] = 0;
+    m_yn[i] = 0;
+    m_yn1[i] = 0;
+    m_yn2[i] = 0;
 
     // Fourth order sections
-    _yn3[i] = 0;
-    _yn4[i] = 0;
+    m_yn3[i] = 0;
+    m_yn4[i] = 0;
   }
 }
 
-void BiquadChain::processBiquad(const float *input, float *output, const int stride, const int count, const Biquad *coeffs)
+void BiquadChain::processBiquad(const double *input, double *output, const uint32_t stride, const uint32_t count, const Biquad *coeffs)
 {
 
-  double *yn = &_yn[0];
-  double *yn1 = &_yn1[0];
-  double *yn2 = &_yn2[0];
+  double *yn = &m_yn[0];
+  double *yn1 = &m_yn1[0];
+  double *yn2 = &m_yn2[0];
 
   for (int n = 0; n < count; n++)
   {
     double xn = *input;
 
-    yn[0] = coeffs[0].b0 * xn + coeffs[0].b1 * _xn1 + coeffs[0].b2 * _xn2 + coeffs[0].a1 * yn1[0] + coeffs[0].a2 * yn2[0];
+    yn[0] = coeffs[0].b0 * xn +
+            coeffs[0].b1 * m_xn1 +
+            coeffs[0].b2 * m_xn2 +
+            coeffs[0].a1 * yn1[0] +
+            coeffs[0].a2 * yn2[0];
 
-    for (int i = 1; i < numFilters; i++)
+    for (uint32_t i = 1; i < numFilters; i++)
     {
-      yn[i] = coeffs[i].b0 * yn[i - 1] + coeffs[i].b1 * yn1[i - 1] + coeffs[i].b2 * yn2[i - 1] + coeffs[i].a1 * yn1[i] + coeffs[i].a2 * yn2[i];
+      yn[i] = coeffs[i].b0 * yn[i - 1] +
+              coeffs[i].b1 * yn1[i - 1] +
+              coeffs[i].b2 * yn2[i - 1] +
+              coeffs[i].a1 * yn1[i] +
+              coeffs[i].a2 * yn2[i];
     }
 
     // Shift delay line elements.
-    for (int i = 0; i < numFilters; i++)
+    for (uint32_t i = 0; i < numFilters; i++)
     {
       yn2[i] = yn1[i];
       yn1[i] = yn[i];
     }
-    _xn2 = _xn1;
-    _xn1 = xn;
+    m_xn2 = m_xn1;
+    m_xn1 = xn;
 
     // Store result and stride
     *output = yn[numFilters - 1];
@@ -147,32 +159,46 @@ void BiquadChain::processBiquad(const float *input, float *output, const int str
   }
 }
 
-void BiquadChain::processFourthOrderSections(const float *input, float *output, const int stride, const int count, const Biquad *coeffs)
+void BiquadChain::processFourthOrderSections(const double *input, double *output, const uint32_t stride, const uint32_t count, const Biquad *coeffs)
 {
 
-  double *yn = &_yn[0];
-  double *yn1 = &_yn1[0];
-  double *yn2 = &_yn2[0];
-  double *yn3 = &_yn3[0];
-  double *yn4 = &_yn4[0];
+  double *yn = &m_yn[0];
+  double *yn1 = &m_yn1[0];
+  double *yn2 = &m_yn2[0];
+  double *yn3 = &m_yn3[0];
+  double *yn4 = &m_yn4[0];
 
-  for (int n = 0; n < count; n++)
+  for (uint32_t n = 0; n < count; n++)
   {
     double xn = *input;
 
-    yn[0] = coeffs[0].b0 * xn + coeffs[0].b1 * _xn1 + coeffs[0].b2 * _xn2 + coeffs[0].b3 * xn3 + coeffs[0].b4 * xn4 +
+    yn[0] = coeffs[0].b0 * xn +
+            coeffs[0].b1 * m_xn1 +
+            coeffs[0].b2 * m_xn2 +
+            coeffs[0].b3 * m_xn3 +
+            coeffs[0].b4 * m_xn4 +
 
-            coeffs[0].a1 * yn1[0] + coeffs[0].a2 * yn2[0] + coeffs[0].a3 * yn3[0] + coeffs[0].a4 * yn4[0];
+            coeffs[0].a1 * yn1[0] +
+            coeffs[0].a2 * yn2[0] +
+            coeffs[0].a3 * yn3[0] +
+            coeffs[0].a4 * yn4[0];
 
-    for (int i = 1; i < numFilters; i++)
+    for (uint32_t i = 1; i < numFilters; i++)
     {
-      yn[i] = coeffs[i].b0 * yn[i - 1] + coeffs[i].b1 * yn1[i - 1] + coeffs[i].b2 * yn2[i - 1] + coeffs[i].b3 * yn3[i - 1] + coeffs[i].b4 * yn4[i - 1] +
+      yn[i] = coeffs[i].b0 * yn[i - 1] +
+              coeffs[i].b1 * yn1[i - 1] +
+              coeffs[i].b2 * yn2[i - 1] +
+              coeffs[i].b3 * yn3[i - 1] +
+              coeffs[i].b4 * yn4[i - 1] +
 
-              coeffs[i].a1 * yn1[i] + coeffs[i].a2 * yn2[i] + coeffs[i].a3 * yn3[i] + coeffs[i].a4 * yn4[i];
+              coeffs[i].a1 * yn1[i] +
+              coeffs[i].a2 * yn2[i] +
+              coeffs[i].a3 * yn3[i] +
+              coeffs[i].a4 * yn4[i];
     }
 
     // Shift delay line elements.
-    for (int i = 0; i < numFilters; i++)
+    for (uint32_t i = 0; i < numFilters; i++)
     {
       yn4[i] = yn3[i];
       yn3[i] = yn2[i];
@@ -180,10 +206,10 @@ void BiquadChain::processFourthOrderSections(const float *input, float *output, 
       yn1[i] = yn[i];
     }
 
-    xn4 = xn3;
-    xn3 = _xn2;
-    _xn2 = _xn1;
-    _xn1 = xn;
+    m_xn4 = m_xn3;
+    m_xn3 = m_xn2;
+    m_xn2 = m_xn1;
+    m_xn1 = xn;
 
     // Store result and stride
     *output = yn[numFilters - 1];

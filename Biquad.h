@@ -28,6 +28,7 @@
  */
 
 #include <complex>
+#include <cstdint>
 #include <vector>
 
 using namespace std;
@@ -62,29 +63,29 @@ class BiquadChain
 {
 
 public:
-  BiquadChain(int count);
+  BiquadChain(uint32_t count);
 
   BiquadChain();
   ~BiquadChain();
 
-  void resize(int count);
+  void resize(uint32_t count);
   void reset();
 
   // Process the biquad filter chain on the input buffer, write to output buffer
   // buffers arrays contain count elements with a single stride separating successive elements.
-  void processBiquad(const float *input, float *output, const int stride, const int count, const Biquad *coeffs);
+  void processBiquad(const double *input, double *output, const uint32_t stride, const uint32_t count, const Biquad *coeffs);
 
   // Extension for fourth order sections
-  void processFourthOrderSections(const float *input, float *output, int stride, int count, const Biquad *coeffs);
+  void processFourthOrderSections(const double *input, double *output, uint32_t stride, uint32_t count, const Biquad *coeffs);
 
 private:
   int numFilters;
-  double _xn1, _xn2;
-  vector<double> _yn, _yn1, _yn2;
+  double m_xn1, m_xn2;
+  vector<double> m_yn, m_yn1, m_yn2;
 
   // Fourth order section variables
-  double xn3, xn4;
-  vector<double> _yn3, _yn4;
+  double m_xn3, m_xn4;
+  vector<double> m_yn3, m_yn4;
 
-  void allocate(int count);
+  void allocate(uint32_t count);
 };
