@@ -73,10 +73,10 @@ public:
 
   // Process the biquad filter chain on the input buffer, write to output buffer
   // buffers arrays contain count elements with a single stride separating successive elements.
-  void processBiquad(const double *input, double *output, const uint32_t stride, const uint32_t count, const Biquad *coeffs);
+  void processBiquad(const double *input, double *output, const int32_t stride, const uint32_t count, const Biquad *coeffs);
 
   // Extension for fourth order sections
-  void processFourthOrderSections(const double *input, double *output, uint32_t stride, uint32_t count, const Biquad *coeffs);
+  void processFourthOrderSections(const double *input, double *output, int32_t stride, uint32_t count, const Biquad *coeffs);
 
 private:
   int numFilters;

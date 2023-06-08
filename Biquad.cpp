@@ -116,7 +116,7 @@ void BiquadChain::reset()
   }
 }
 
-void BiquadChain::processBiquad(const double *input, double *output, const uint32_t stride, const uint32_t count, const Biquad *coeffs)
+void BiquadChain::processBiquad(const double *input, double *output, const int32_t stride, const uint32_t count, const Biquad *coeffs)
 {
 
   double *yn = &m_yn[0];
@@ -159,7 +159,7 @@ void BiquadChain::processBiquad(const double *input, double *output, const uint3
   }
 }
 
-void BiquadChain::processFourthOrderSections(const double *input, double *output, const uint32_t stride, const uint32_t count, const Biquad *coeffs)
+void BiquadChain::processFourthOrderSections(const double *input, double *output, const int32_t stride, const uint32_t count, const Biquad *coeffs)
 {
 
   double *yn = &m_yn[0];
