@@ -42,27 +42,27 @@ public:
   {
   }
 
-  static vector<complex_double> prototypeAnalogLowPass(int filterOrder);
+  static vector<complex_double> prototypeAnalogLowPass(uint32_t filterOrder);
 
-  bool loPass(double fs, double f1, double f2, int filterOrder,
+  bool loPass(double fs, double f1, double f2, uint32_t filterOrder,
               vector<Biquad> &coeffs, double &overallGain)
   {
     return coefficients(kLoPass, fs, f1, f2, filterOrder, coeffs, overallGain);
   }
 
-  bool hiPass(double fs, double f1, double f2, int filterOrder,
+  bool hiPass(double fs, double f1, double f2, uint32_t filterOrder,
               vector<Biquad> &coeffs, double &overallGain)
   {
     return coefficients(kHiPass, fs, f1, f2, filterOrder, coeffs, overallGain);
   }
 
-  bool bandPass(double fs, double f1, double f2, int filterOrder,
+  bool bandPass(double fs, double f1, double f2, uint32_t filterOrder,
                 vector<Biquad> &coeffs, double &overallGain)
   {
     return coefficients(kBandPass, fs, f1, f2, filterOrder, coeffs, overallGain);
   }
 
-  bool bandStop(double fs, double f1, double f2, int filterOrder,
+  bool bandStop(double fs, double f1, double f2, uint32_t filterOrder,
                 vector<Biquad> &coeffs, double &overallGain)
   {
     return coefficients(kBandStop, fs, f1, f2, filterOrder, coeffs, overallGain);
@@ -103,7 +103,7 @@ private:
   // Internal state used during computation of coefficients
   double f1, f2;
 
-  int numPoles, numZeros;
+  uint32_t numPoles, numZeros;
   vector<complex_double> zeros;
   vector<complex_double> poles;
 
@@ -113,6 +113,6 @@ private:
   double gain;
   double preBLTgain;
 
-  int nba;
+  uint32_t nba;
   double *ba;
 };

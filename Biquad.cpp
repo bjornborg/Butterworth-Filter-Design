@@ -31,8 +31,6 @@
 
 #include "Biquad.h"
 
-#pragma mark Biquad
-
 Biquad::Biquad()
 {
 }
@@ -64,8 +62,6 @@ void Biquad::DF2TBiquad(double B0, double B1, double B2,
   a1 = (-A1) / A0; // The negation conforms the Direct-Form II Transposed discrete-time
   a2 = (-A2) / A0; // filter (DF2T) coefficients to the expectations of the process function.
 }
-
-#pragma mark - BiquadChain
 
 void BiquadChain::allocate(uint32_t count)
 {
@@ -123,7 +119,7 @@ void BiquadChain::processBiquad(const double *input, double *output, const int32
   double *yn1 = &m_yn1[0];
   double *yn2 = &m_yn2[0];
 
-  for (int n = 0; n < count; n++)
+  for (uint32_t n = 0; n < count; n++)
   {
     double xn = *input;
 

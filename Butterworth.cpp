@@ -34,10 +34,6 @@
 
 #define LOG_OUTPUT 0 // Enable output logging
 
-using namespace std;
-
-#pragma mark - Public
-
 //******************************************************************************
 // Lowpass analogue prototype. Places Butterworth poles evenly around
 // the S-plane unit circle.
@@ -46,7 +42,7 @@ using namespace std;
 //******************************************************************************
 
 vector<complex_double>
-Butterworth::prototypeAnalogLowPass(int filterOrder)
+Butterworth::prototypeAnalogLowPass(uint32_t filterOrder)
 {
 
   vector<complex_double> poles;
@@ -205,7 +201,7 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
   {                                           // pre-blt is okay for S-plane
     ba[0] = preBLTgain * (preBLTgain / gain); // 2nd term is how much BLT boosts,
   }
-  else if (filter == kHiPass || kBandStop)
+  else if (filter == kHiPass || filter == kBandStop)
   { // HF gain != DC gain
     ba[0] = 1 / ba[0];
   }
@@ -214,7 +210,7 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
   // Init biquad chain with coefficients from SOS
 
   overallGain = ba[0];
-  int numFilters = filterOrder / 2;
+  uint32_t numFilters = filterOrder / 2;
   if (filter == kBandPass || filter == kBandStop)
   {
     numFilters = filterOrder; // we have double the # of biquad sections
@@ -299,7 +295,7 @@ bool Butterworth::coefficientsEQ(FILTER_TYPE filter, double fs, double f1,
     return true;
   }
 
-  int L = filterOrder / 2;
+  uint32_t L = filterOrder / 2;
   double c0 = cos(w0);
 
   if (w0 == 0)
@@ -385,8 +381,6 @@ bool Butterworth::coefficientsEQ(FILTER_TYPE filter, double fs, double f1,
   return true;
 }
 
-#pragma mark - Filter design utility methods
-
 //******************************************************************************
 //
 // Z = (2 + S) / (2 - S) is the S-plane to Z-plane bilinear transform
@@ -441,7 +435,7 @@ bool Butterworth::s2Z()
 bool Butterworth::zp2SOS()
 {
 
-  int filterOrder = std::max(numZeros, numPoles);
+  uint32_t filterOrder = std::max(numZeros, numPoles);
   complex_double *zerosTempVec = new complex_double[filterOrder];
   complex_double *polesTempVec = new complex_double[filterOrder];
 
@@ -491,8 +485,6 @@ bool Butterworth::zp2SOS()
   delete[] polesTempVec;
   return true;
 }
-
-#pragma mark - Analog lowpss prototype conversion methods
 
 //******************************************************************************
 // Convert analog lowpass prototype poles to lowpass

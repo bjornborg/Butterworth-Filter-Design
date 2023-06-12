@@ -79,7 +79,7 @@ public:
   void processFourthOrderSections(const double *input, double *output, int32_t stride, uint32_t count, const Biquad *coeffs);
 
 private:
-  int numFilters;
+  uint32_t numFilters;
   double m_xn1, m_xn2;
   vector<double> m_yn, m_yn1, m_yn2;
 
