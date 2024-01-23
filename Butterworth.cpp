@@ -41,19 +41,19 @@
 // Reference: MATLAB buttap(filterOrder)
 //******************************************************************************
 
-vector<complex_double>
+std::vector<std::complex<double>>
 Butterworth::prototypeAnalogLowPass(uint32_t filterOrder)
 {
 
-  vector<complex_double> poles;
+  std::vector<std::complex<double>> poles;
 
   for (uint32_t k = 0; k < (filterOrder + 1) / 2; k++)
   {
     double theta = (double)(2 * k + 1) * M_PI / (2 * filterOrder);
     double real = -sin(theta);
     double imag = cos(theta);
-    poles.push_back(complex_double(real, imag));
-    poles.push_back(complex_double(real, -imag)); // conjugate
+    poles.push_back(std::complex<double>(real, imag));
+    poles.push_back(std::complex<double>(real, -imag)); // conjugate
   }
 
   return poles;
@@ -67,9 +67,9 @@ Butterworth::prototypeAnalogLowPass(uint32_t filterOrder)
 //******************************************************************************
 
 bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double freq1_cutoff,
-                               const double freq2_cutoff, const int filterOrder,
-                               vector<Biquad> &coeffs,
-                               double &overallGain)
+    const double freq2_cutoff, const int filterOrder,
+    std::vector<Biquad> &coeffs,
+    double &overallGain)
 {
 
   //******************************************************************************
@@ -101,11 +101,11 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
   // Design basic S-plane poles-only analogue LP prototype
 
   // Get zeros & poles of prototype analogue low pass.
-  vector<complex_double> tempPoles = prototypeAnalogLowPass(filterOrder);
+  std::vector<std::complex<double>> tempPoles = prototypeAnalogLowPass(filterOrder);
 
   // Copy tmppole into poles
   int index = 0;
-  for (vector<complex_double>::iterator itr = tempPoles.begin(); itr != tempPoles.end(); itr++)
+  for (std::vector<std::complex<double>>::iterator itr = tempPoles.begin(); itr != tempPoles.end(); itr++)
   {
     poles[index] = *itr;
     index++;
@@ -263,9 +263,9 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
 ////******************************************************************************
 
 bool Butterworth::coefficientsEQ(FILTER_TYPE filter, double fs, double f1,
-                                 double f2, int filterOrder,
-                                 vector<Biquad> &coeffs,
-                                 double overallGain)
+    double f2, int filterOrder,
+    std::vector<Biquad> &coeffs,
+    double overallGain)
 {
 
   // Convert band edges to radians/second
@@ -286,8 +286,8 @@ bool Butterworth::coefficientsEQ(FILTER_TYPE filter, double fs, double f1,
   double G = overallGain;
   double GB = 0.75 * G; // Setup Peak-to-Bandwidth Gain Ratio. What about the 3-dB point??
 
-  G = pow(10, (G / 20.0));   // G  = 10^(G/20);
-  GB = pow(10, (GB / 20.0)); // GB = 10^(GB/20);
+  G = std::pow(10, (G / 20.0));   // G  = 10^(G/20);
+  GB = std::pow(10, (GB / 20.0)); // GB = 10^(GB/20);
 
   //  Do not proceed with design if G == G0
   if (G == G0)
@@ -314,13 +314,13 @@ bool Butterworth::coefficientsEQ(FILTER_TYPE filter, double fs, double f1,
   double WB = tan(Dw / 2.0);
   double epsilon = sqrt(((G * G) - (GB * GB)) / ((GB * GB) - (G0 * G0)));
 
-  double g = pow(G, (1.0 / filterOrder));
-  double g0 = pow(G0, (1.0 / filterOrder));
+  double g = std::pow(G, (1.0 / filterOrder));
+  double g0 = std::pow(G0, (1.0 / filterOrder));
 
   // Butterworth
-  double b = WB / pow(epsilon, (1.0 / filterOrder));
+  double b = WB / std::pow(epsilon, (1.0 / filterOrder));
 
-  // Ensure size 'L' of coeff vector is correct!
+  // Ensure size 'L' of coeff std::vector is correct!
   coeffs.resize(L);
   for (uint32_t i = 1; i <= L; i++)
   {
@@ -389,15 +389,15 @@ bool Butterworth::coefficientsEQ(FILTER_TYPE filter, double fs, double f1,
 //
 //******************************************************************************
 
-double Butterworth::blt(complex_double &sz)
+double Butterworth::blt(std::complex<double> &sz)
 {
 
-  complex_double two(2.0, 0);
-  complex_double s = sz; // sz is an input(S-plane) & output(Z-plane) arg
+  std::complex<double> two(2.0, 0);
+  std::complex<double> s = sz; // sz is an input(S-plane) & output(Z-plane) arg
   sz = (two + s) / (two - s);
 
   // return the gain
-  return abs((two - s));
+  return std::abs((two - s));
 }
 
 //******************************************************************************
@@ -436,8 +436,8 @@ bool Butterworth::zp2SOS()
 {
 
   uint32_t filterOrder = std::max(numZeros, numPoles);
-  complex_double *zerosTempVec = new complex_double[filterOrder];
-  complex_double *polesTempVec = new complex_double[filterOrder];
+  std::complex<double> *zerosTempVec = new std::complex<double>[filterOrder];
+  std::complex<double> *polesTempVec = new std::complex<double>[filterOrder];
 
   // Copy
   for (uint32_t i = 0; i < numZeros; i++)
@@ -449,7 +449,7 @@ bool Butterworth::zp2SOS()
   // numZeros = 0 will map to -1 in Z-plane.
   for (uint32_t i = numZeros; i < filterOrder; i++)
   {
-    zerosTempVec[i] = complex_double(-1, 0);
+    zerosTempVec[i] = std::complex<double>(-1, 0);
   }
 
   // Copy
@@ -494,7 +494,7 @@ void Butterworth::convert2lopass()
 {
   Wc = f2; // critical frequency
 
-  gain *= pow(Wc, numPoles);
+  gain *= std::pow(Wc, numPoles);
 
   numZeros = 0; // poles only
   for (uint32_t i = 0; i < numPoles; i++)
@@ -513,8 +513,8 @@ void Butterworth::convert2hipass()
   Wc = f2; // Critical frequency
 
   // Calculate gain
-  complex_double prodz(1.0, 0.0);
-  complex_double prodp(1.0, 0.0);
+  std::complex<double> prodz(1.0, 0.0);
+  std::complex<double> prodp(1.0, 0.0);
 
   for (uint32_t i = 0; i < numZeros; i++)
   {
@@ -531,9 +531,9 @@ void Butterworth::convert2hipass()
   // Convert LP poles to HP
   for (uint32_t i = 0; i < numPoles; i++)
   {
-    if (abs(poles[i]))
+    if (std::abs(poles[i]))
     {
-      poles[i] = complex_double(Wc) / poles[i]; //  hp_S = Wc / lp_S;
+      poles[i] = std::complex<double>(Wc) / poles[i]; //  hp_S = Wc / lp_S;
     }
   }
 
@@ -541,7 +541,7 @@ void Butterworth::convert2hipass()
   numZeros = numPoles;
   for (uint32_t i = 0; i < numZeros; i++)
   {
-    zeros[i] = complex_double(0.0);
+    zeros[i] = std::complex<double>(0.0);
   }
 }
 
@@ -559,27 +559,27 @@ void Butterworth::convert2bandpass()
   Wc = sqrt(f1 * f2);
 
   // Calculate bandpass gain
-  gain *= pow(bw, numPoles - numZeros);
+  gain *= std::pow(bw, numPoles - numZeros);
 
   // Convert LP poles to BP: these two sets of for-loops result in an ordered
   // list of poles and their complex conjugates
-  vector<complex_double> tempPoles;
+  std::vector<std::complex<double>> tempPoles;
   for (uint32_t i = 0; i < numPoles; i++)
   { // First set of poles + conjugates
-    if (abs(poles[i]))
+    if (std::abs(poles[i]))
     {
-      complex_double firstterm = 0.5 * poles[i] * bw;
-      complex_double secondterm = 0.5 * sqrt((bw * bw) * (poles[i] * poles[i]) - 4 * Wc * Wc);
+      std::complex<double> firstterm = 0.5 * poles[i] * bw;
+      std::complex<double> secondterm = 0.5 * sqrt((bw * bw) * (poles[i] * poles[i]) - 4 * Wc * Wc);
       tempPoles.push_back(firstterm + secondterm);
     }
   }
 
   for (uint32_t i = 0; i < numPoles; i++)
   { // Second set of poles + conjugates
-    if (abs(poles[i]))
+    if (std::abs(poles[i]))
     {
-      complex_double firstterm = 0.5 * poles[i] * bw;
-      complex_double secondterm = 0.5 * sqrt((bw * bw) * (poles[i] * poles[i]) - 4 * Wc * Wc);
+      std::complex<double> firstterm = 0.5 * poles[i] * bw;
+      std::complex<double> secondterm = 0.5 * sqrt((bw * bw) * (poles[i] * poles[i]) - 4 * Wc * Wc);
       tempPoles.push_back(firstterm - secondterm); // complex conjugate
     }
   }
@@ -588,12 +588,12 @@ void Butterworth::convert2bandpass()
   numZeros = numPoles;
   for (uint32_t i = 0; i < numZeros; i++)
   {
-    zeros[i] = complex_double(0.0);
+    zeros[i] = std::complex<double>(0.0);
   }
 
   // Copy converted poles to output array
   int index = 0;
-  for (vector<complex_double>::iterator itr = tempPoles.begin(); itr != tempPoles.end(); itr++)
+  for (std::vector<std::complex<double>>::iterator itr = tempPoles.begin(); itr != tempPoles.end(); itr++)
   {
     poles[index] = *itr;
     index++;
@@ -615,8 +615,8 @@ void Butterworth::convert2bandstop()
   Wc = sqrt(f1 * f2);
 
   // Compute gain
-  complex_double prodz(1.0, 0.0);
-  complex_double prodp(1.0, 0.0);
+  std::complex<double> prodz(1.0, 0.0);
+  std::complex<double> prodp(1.0, 0.0);
   for (uint32_t i = 0; i < numZeros; i++)
   {
     prodz *= -zeros[i];
@@ -631,37 +631,37 @@ void Butterworth::convert2bandstop()
 
   // Convert LP zeros to band stop
   numZeros = numPoles;
-  vector<complex_double> ztmp;
+  std::vector<std::complex<double>> ztmp;
   for (uint32_t i = 0; i < numZeros; i++)
   {
-    ztmp.push_back(complex_double(0.0, Wc));
-    ztmp.push_back(complex_double(0.0, -Wc)); // complex conjugate
+    ztmp.push_back(std::complex<double>(0.0, Wc));
+    ztmp.push_back(std::complex<double>(0.0, -Wc)); // complex conjugate
   }
 
-  vector<complex_double> tempPoles;
+  std::vector<std::complex<double>> tempPoles;
   for (uint32_t i = 0; i < numPoles; i++)
   { // First set of poles + conjugates
-    if (abs(poles[i]))
+    if (std::abs(poles[i]))
     {
-      complex_double term1 = 0.5 * bw / poles[i];
-      complex_double term2 = 0.5 * sqrt((bw * bw) / (poles[i] * poles[i]) - (4 * Wc * Wc));
+      std::complex<double> term1 = 0.5 * bw / poles[i];
+      std::complex<double> term2 = 0.5 * sqrt((bw * bw) / (poles[i] * poles[i]) - (4 * Wc * Wc));
       tempPoles.push_back(term1 + term2);
     }
   }
 
   for (uint32_t i = 0; i < numPoles; i++)
   { // Second set of poles + conjugates
-    if (abs(poles[i]))
+    if (std::abs(poles[i]))
     {
-      complex_double term1 = 0.5 * bw / poles[i];
-      complex_double term2 = 0.5 * sqrt((bw * bw) / (poles[i] * poles[i]) - (4 * Wc * Wc));
+      std::complex<double> term1 = 0.5 * bw / poles[i];
+      std::complex<double> term2 = 0.5 * sqrt((bw * bw) / (poles[i] * poles[i]) - (4 * Wc * Wc));
       tempPoles.push_back(term1 - term2); // complex conjugate
     }
   }
 
   // Copy converted zeros to output array
   int index = 0;
-  for (vector<complex_double>::iterator itr = ztmp.begin(); itr != ztmp.end(); itr++)
+  for (std::vector<std::complex<double>>::iterator itr = ztmp.begin(); itr != ztmp.end(); itr++)
   {
     zeros[index] = *itr;
     index++;
@@ -670,7 +670,7 @@ void Butterworth::convert2bandstop()
 
   // Copy converted poles to output array
   index = 0;
-  for (vector<complex_double>::iterator itr = tempPoles.begin(); itr != tempPoles.end(); itr++)
+  for (std::vector<std::complex<double>>::iterator itr = tempPoles.begin(); itr != tempPoles.end(); itr++)
   {
     poles[index] = *itr;
     index++;

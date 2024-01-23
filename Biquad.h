@@ -27,11 +27,9 @@
 
  */
 
-#include <complex>
+// #include <complex>
 #include <cstdint>
 #include <vector>
-
-using namespace std;
 
 // A biquad filter expression:
 // y[n] = b0 * x[n] + b1 * x[n-1] + b2 * x[n-2] + a1 * y[n-1] + a2 * y[n-2];
@@ -81,11 +79,11 @@ public:
 private:
   uint32_t numFilters;
   double m_xn1, m_xn2;
-  vector<double> m_yn, m_yn1, m_yn2;
+  std::vector<double> m_yn, m_yn1, m_yn2;
 
   // Fourth order section variables
   double m_xn3, m_xn4;
-  vector<double> m_yn3, m_yn4;
+  std::vector<double> m_yn3, m_yn4;
 
   void allocate(uint32_t count);
 };

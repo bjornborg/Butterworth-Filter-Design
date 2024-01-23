@@ -29,7 +29,7 @@
 
 #include "Biquad.h"
 
-typedef complex<double> complex_double;
+#include <complex>
 
 class Butterworth
 {
@@ -42,28 +42,28 @@ public:
   {
   }
 
-  static vector<complex_double> prototypeAnalogLowPass(uint32_t filterOrder);
+  static std::vector<std::complex<double>> prototypeAnalogLowPass(uint32_t filterOrder);
 
   bool loPass(double fs, double f1, double f2, uint32_t filterOrder,
-              vector<Biquad> &coeffs, double &overallGain)
+      std::vector<Biquad> &coeffs, double &overallGain)
   {
     return coefficients(kLoPass, fs, f1, f2, filterOrder, coeffs, overallGain);
   }
 
   bool hiPass(double fs, double f1, double f2, uint32_t filterOrder,
-              vector<Biquad> &coeffs, double &overallGain)
+      std::vector<Biquad> &coeffs, double &overallGain)
   {
     return coefficients(kHiPass, fs, f1, f2, filterOrder, coeffs, overallGain);
   }
 
   bool bandPass(double fs, double f1, double f2, uint32_t filterOrder,
-                vector<Biquad> &coeffs, double &overallGain)
+      std::vector<Biquad> &coeffs, double &overallGain)
   {
     return coefficients(kBandPass, fs, f1, f2, filterOrder, coeffs, overallGain);
   }
 
   bool bandStop(double fs, double f1, double f2, uint32_t filterOrder,
-                vector<Biquad> &coeffs, double &overallGain)
+      std::vector<Biquad> &coeffs, double &overallGain)
   {
     return coefficients(kBandStop, fs, f1, f2, filterOrder, coeffs, overallGain);
   }
@@ -83,14 +83,14 @@ public:
 
   // generic coeffs
   bool coefficients(FILTER_TYPE filter, const double fs, const double freq1_cutoff, const double freq2_cutoff, const int filterOrder,
-                    vector<Biquad> &coeffs, double &overallGain);
+      std::vector<Biquad> &coeffs, double &overallGain);
 
   // high order EQ
   bool coefficientsEQ(FILTER_TYPE filter, const double fs, const double f1, const double f2, const int filterOrder,
-                      vector<Biquad> &coeffs, double overallGain);
+      std::vector<Biquad> &coeffs, double overallGain);
 
 private:
-  double blt(complex_double &sz);
+  double blt(std::complex<double> &sz);
   bool s2Z();
   bool zp2SOS();
 
@@ -104,8 +104,8 @@ private:
   double f1, f2;
 
   uint32_t numPoles, numZeros;
-  vector<complex_double> zeros;
-  vector<complex_double> poles;
+  std::vector<std::complex<double>> zeros;
+  std::vector<std::complex<double>> poles;
 
   double Wc; // Omega cutoff == passband edge freq
   double bw; // Bandwidth

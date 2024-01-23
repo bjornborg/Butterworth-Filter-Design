@@ -27,7 +27,8 @@
 
  */
 
-#include <math.h>
+#include <cmath>
+// #include <iostream>
 
 #include "Biquad.h"
 
