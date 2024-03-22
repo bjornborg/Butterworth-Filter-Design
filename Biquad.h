@@ -33,33 +33,32 @@
 // A biquad filter expression:
 // y[n] = b0 * x[n] + b1 * x[n-1] + b2 * x[n-2] + a1 * y[n-1] + a2 * y[n-2];
 
-class Biquad
-{
+class Biquad {
 
-public:
+ public:
   Biquad();
   ~Biquad();
 
-  // Coefficients are public, as client classes and test harnesses need direct access.
-  // Special accessors to better encapsulate data, would be less readable,
-  // so skipping for pedagogical reasons. Another idea would be to make this a struct.
+  // Coefficients are public, as client classes and test harnesses need direct
+  // access. Special accessors to better encapsulate data, would be less
+  // readable, so skipping for pedagogical reasons. Another idea would be to
+  // make this a struct.
   //
   double b0, b1, b2, a1, a2; // second order section variable
-  double a3, a4, b3, b4;     // fourth order section variables
+  double a3, a4, b3, b4; // fourth order section variables
 
   // Coefficients for a DF2T fourth order section (Used for EQ filters)
-  void DF2TFourthOrderSection(double B0, double B1, double B2, double B3, double B4,
-                              double A0, double A1, double A2, double A3, double A4);
+  void DF2TFourthOrderSection(double B0, double B1, double B2, double B3,
+      double B4, double A0, double A1, double A2, double A3, double A4);
 
   // Coefficients for a DF2T biquad section.
-  void DF2TBiquad(double B0, double B1, double B2,
-                  double A0, double A1, double A2);
+  void DF2TBiquad(
+      double B0, double B1, double B2, double A0, double A1, double A2);
 };
 
-class BiquadChain
-{
+class BiquadChain {
 
-public:
+ public:
   BiquadChain(uint32_t count);
 
   BiquadChain();
@@ -69,13 +68,16 @@ public:
   void reset();
 
   // Process the biquad filter chain on the input buffer, write to output buffer
-  // buffers arrays contain count elements with a single stride separating successive elements.
-  void processBiquad(const double *input, double *output, const int32_t stride, const uint32_t count, const Biquad *coeffs);
+  // buffers arrays contain count elements with a single stride separating
+  // successive elements.
+  void processBiquad(double const *input, double *output, int32_t const stride,
+      uint32_t const count, Biquad const *coeffs);
 
   // Extension for fourth order sections
-  void processFourthOrderSections(const double *input, double *output, int32_t stride, uint32_t count, const Biquad *coeffs);
+  void processFourthOrderSections(double const *input, double *output,
+      int32_t stride, uint32_t count, Biquad const *coeffs);
 
-private:
+ private:
   uint32_t numFilters;
   double m_xn1, m_xn2;
   std::vector<double> m_yn, m_yn1, m_yn2;

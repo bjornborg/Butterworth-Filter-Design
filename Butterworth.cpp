@@ -33,6 +33,8 @@
 
 #define LOG_OUTPUT 0 // Enable output logging
 
+#define EPSILON 0.00000001
+
 //******************************************************************************
 // Lowpass analogue prototype. Places Butterworth poles evenly around
 // the S-plane unit circle.
@@ -40,14 +42,13 @@
 // Reference: MATLAB buttap(filterOrder)
 //******************************************************************************
 
-std::vector<std::complex<double>>
-Butterworth::prototypeAnalogLowPass(uint32_t filterOrder)
+std::vector<std::complex<double>> Butterworth::prototypeAnalogLowPass(
+    uint32_t filterOrder)
 {
 
   std::vector<std::complex<double>> poles;
 
-  for (uint32_t k = 0; k < (filterOrder + 1) / 2; k++)
-  {
+  for (uint32_t k = 0; k < (filterOrder + 1) / 2; k++) {
     double theta = (double)(2 * k + 1) * M_PI / (2 * filterOrder);
     double real = -sin(theta);
     double imag = cos(theta);
@@ -65,10 +66,9 @@ Butterworth::prototypeAnalogLowPass(uint32_t filterOrder)
 //            http://en.wikipedia.org/wiki/Butterworth_filter
 //******************************************************************************
 
-bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double freq1_cutoff,
-    const double freq2_cutoff, const int filterOrder,
-    std::vector<Biquad> &coeffs,
-    double &overallGain)
+bool Butterworth::coefficients(FILTER_TYPE filter, double const fs,
+    double const freq1_cutoff, double const freq2_cutoff, int const filterOrder,
+    std::vector<Biquad> &coeffs, double &overallGain)
 {
 
   //******************************************************************************
@@ -77,8 +77,8 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
   zeros.resize(2 * filterOrder);
   poles.resize(2 * filterOrder);
 
-  f1 = freq1_cutoff;
-  f2 = freq2_cutoff;
+  m_f1 = freq1_cutoff;
+  m_f2 = freq2_cutoff;
 
   Wc = 0; // Omega cutoff = passband edge freq
   bw = 0;
@@ -86,12 +86,11 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
   //******************************************************************************
   // Prewarp
 
-  f1 = 2 * tan(M_PI * f1 / fs);
-  f2 = 2 * tan(M_PI * f2 / fs);
+  m_f1 = 2 * tan(M_PI * m_f1 / fs);
+  m_f2 = 2 * tan(M_PI * m_f2 / fs);
 
 #if DEBUG && LOG_OUTPUT
-  cout << endl
-       << endl;
+  cout << endl << endl;
   cout << "[Butterworth Filter Design] prewarped f1 = " << f1 << endl;
   cout << "[Butterworth Filter Design] prewarped f2 = " << f2 << endl;
 #endif
@@ -100,34 +99,33 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
   // Design basic S-plane poles-only analogue LP prototype
 
   // Get zeros & poles of prototype analogue low pass.
-  std::vector<std::complex<double>> tempPoles = prototypeAnalogLowPass(filterOrder);
+  std::vector<std::complex<double>> tempPoles =
+      prototypeAnalogLowPass(filterOrder);
 
   // Copy tmppole into poles
   int index = 0;
-  for (std::vector<std::complex<double>>::iterator itr = tempPoles.begin(); itr != tempPoles.end(); itr++)
-  {
+  for (std::vector<std::complex<double>>::iterator itr = tempPoles.begin();
+       itr != tempPoles.end(); itr++) {
     poles[index] = *itr;
     index++;
   }
 
   numPoles = (int)tempPoles.size();
   numZeros = 0; // butterworth LP prototype has no zeros.
-  gain = 1.0;   // always 1 for the butterworth prototype lowpass.
+  gain = 1.0; // always 1 for the butterworth prototype lowpass.
 
   //******************************************************************************
   // Convert prototype to target filter type (LP/HP/BP/BS) - S-plane
 
   // Re-orient BP/BS corner frequencies if necessary
-  if (f1 > f2)
-  {
-    double temp = f2;
-    f2 = f1;
-    f1 = temp;
+  if (m_f1 > m_f2) {
+    double temp = m_f2;
+    m_f2 = m_f1;
+    m_f1 = temp;
   }
 
   // Cutoff Wc = f2
-  switch (filter)
-  {
+  switch (filter) {
 
   case kLoPass:
     convert2lopass();
@@ -145,8 +143,7 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
     convert2bandstop();
     break;
 
-  default:
-  {
+  default: {
 #if LOG_OUTPUT
     cout << "[Butterworth Filter Design] Unknown Filter Type" << endl;
 #endif
@@ -156,12 +153,12 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
 
   //******************************************************************************
   // SANITY CHECK: Ensure poles are in the left half of the S-plane
-  for (uint32_t i = 0; i < numPoles; i++)
-  {
-    if (poles[i].real() > 0)
-    {
+  for (uint32_t i = 0; i < numPoles; i++) {
+    if (poles[i].real() > 0) {
 #if LOG_OUTPUT
-      cerr << "[Butterworth Filter Design] Error: poles must be in the left half plane" << endl;
+      cerr << "[Butterworth Filter Design] Error: poles must be in the left "
+              "half plane"
+           << endl;
 #endif
       return false;
     }
@@ -174,11 +171,9 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
   ba = new double[2 * std::max(numPoles, numZeros) + 5];
   preBLTgain = gain;
 
-  if (!s2Z())
-  {
+  if (!s2Z()) {
 #if LOG_OUTPUT
-    cerr << "[Butterworth Filter Design] Error: s2Z failed" << endl
-         << endl;
+    cerr << "[Butterworth Filter Design] Error: s2Z failed" << endl << endl;
 #endif
     return false;
   }
@@ -186,22 +181,18 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
   //******************************************************************************
   // Split up Z-plane poles and zeros into SOS
 
-  if (!zp2SOS())
-  {
+  if (!zp2SOS()) {
 #if LOG_OUTPUT
-    cerr << "[Butterworth Filter Design] Error: zp2SOS failed" << endl
-         << endl;
+    cerr << "[Butterworth Filter Design] Error: zp2SOS failed" << endl << endl;
 #endif
     return false;
   }
 
   // correct the overall gain
-  if (filter == kLoPass || filter == kBandPass)
-  {                                           // pre-blt is okay for S-plane
-    ba[0] = preBLTgain * (preBLTgain / gain); // 2nd term is how much BLT boosts,
-  }
-  else if (filter == kHiPass || filter == kBandStop)
-  { // HF gain != DC gain
+  if (filter == kLoPass || filter == kBandPass) { // pre-blt is okay for S-plane
+    ba[0] =
+        preBLTgain * (preBLTgain / gain); // 2nd term is how much BLT boosts,
+  } else if (filter == kHiPass || filter == kBandStop) { // HF gain != DC gain
     ba[0] = 1 / ba[0];
   }
 
@@ -210,8 +201,7 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
 
   overallGain = ba[0];
   uint32_t numFilters = filterOrder / 2;
-  if (filter == kBandPass || filter == kBandStop)
-  {
+  if (filter == kBandPass || filter == kBandStop) {
     numFilters = filterOrder; // we have double the # of biquad sections
 
     // IOHAVOC filterOrder is never used again? figure this out FIXME
@@ -219,14 +209,13 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
   }
 
   coeffs.resize(numFilters);
-  for (uint32_t i = 0; i < numFilters; i++)
-  {
-    (coeffs)[i].DF2TBiquad(1.0,            // b0
-                           ba[4 * i + 1],  // b1
-                           ba[4 * i + 2],  // b2
-                           1.0,            // a0
-                           ba[4 * i + 3],  // a1
-                           ba[4 * i + 4]); // a2
+  for (uint32_t i = 0; i < numFilters; i++) {
+    (coeffs)[i].DF2TBiquad(1.0, // b0
+        ba[4 * i + 1], // b1
+        ba[4 * i + 2], // b2
+        1.0, // a0
+        ba[4 * i + 3], // a1
+        ba[4 * i + 4]); // a2
   }
 
 #if LOG_OUTPUT
@@ -237,16 +226,13 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
   cout << "[Butterworth Filter Design] gain = " << gain << endl;
 
   cout << "[Butterworth Filter Design] ba[0] = " << ba[0] << endl;
-  cout << "[Butterworth Filter Design] coeff size = " << nba << endl
-       << endl;
+  cout << "[Butterworth Filter Design] coeff size = " << nba << endl << endl;
 
-  for (uint32_t i = 0; i < (nba - 1) / 4; i++)
-  {
+  for (uint32_t i = 0; i < (nba - 1) / 4; i++) {
     // b0,b1,b2: a0,a1,a2:= 1.0, ba[4*i+1], ba[4*i+2], 1.0, ba[4*i+3], ba[4*i+4]
     cout << "[Butterworth Filter Design] Biquads:= 1.0 " << ba[4 * i + 1] << " "
-         << ba[4 * i + 2] << " "
-         << ba[4 * i + 3] << " "
-         << ba[4 * i + 4] << endl;
+         << ba[4 * i + 2] << " " << ba[4 * i + 3] << " " << ba[4 * i + 4]
+         << endl;
   }
 #endif
 
@@ -262,9 +248,7 @@ bool Butterworth::coefficients(FILTER_TYPE filter, const double fs, const double
 ////******************************************************************************
 
 bool Butterworth::coefficientsEQ(FILTER_TYPE filter, double fs, double f1,
-    double f2, int filterOrder,
-    std::vector<Biquad> &coeffs,
-    double overallGain)
+    double f2, int filterOrder, std::vector<Biquad> &coeffs, double overallGain)
 {
 
   // Convert band edges to radians/second
@@ -275,38 +259,34 @@ bool Butterworth::coefficientsEQ(FILTER_TYPE filter, double fs, double f1,
   // for parametric case in radians/sample
   double Dw = w2 - w1;
   double w0 = acos(sin(w1 + w2) / (sin(w1) + sin(w2)));
-  if (w2 == M_PI)
-  {
+  if (std::abs(w2 - M_PI) < EPSILON) {
     w0 = M_PI;
   }
 
   // Setup gain
   double G0 = 1.0; // Reference gain == 0 dB
   double G = overallGain;
-  double GB = 0.75 * G; // Setup Peak-to-Bandwidth Gain Ratio. What about the 3-dB point??
+  double GB = 0.75 *
+      G; // Setup Peak-to-Bandwidth Gain Ratio. What about the 3-dB point??
 
-  G = std::pow(10, (G / 20.0));   // G  = 10^(G/20);
+  G = std::pow(10, (G / 20.0)); // G  = 10^(G/20);
   GB = std::pow(10, (GB / 20.0)); // GB = 10^(GB/20);
 
   //  Do not proceed with design if G == G0
-  if (G == G0)
-  {
+  if (std::abs(G - G0) < EPSILON) {
     return true;
   }
 
   uint32_t L = filterOrder / 2;
   double c0 = cos(w0);
 
-  if (w0 == 0)
-  {
+  if (w0 < EPSILON) {
     c0 = 1.0;
   }
-  if (w0 == M_PI / 2)
-  {
+  if (std::abs(w0 - M_PI / 2) < EPSILON) {
     c0 = 0.0;
   }
-  if (w0 == M_PI)
-  {
+  if (std::abs(w0 - M_PI) < EPSILON) {
     c0 = -1.0;
   }
 
@@ -321,32 +301,30 @@ bool Butterworth::coefficientsEQ(FILTER_TYPE filter, double fs, double f1,
 
   // Ensure size 'L' of coeff std::vector is correct!
   coeffs.resize(L);
-  for (uint32_t i = 1; i <= L; i++)
-  {
+  for (uint32_t i = 1; i <= L; i++) {
     double phi = (2 * i - 1.0) * M_PI / (2.0 * filterOrder);
     double si = sin(phi);
     double D = b * b + 2.0 * b * si + 1.0;
 
-    if (filter == kLoShelf || filter == kHiShelf)
-    { // Compute SOS coefficients
+    if (filter == kLoShelf || filter == kHiShelf) { // Compute SOS coefficients
 
       double b0h = (g * g * b * b + 2 * g0 * g * b * si + g0 * g0) / D;
-      double b1h = (filter == kHiShelf) ? -2.0 * (g * g * b * b - g0 * g0) / D : 2.0 * (g * g * b * b - g0 * g0) / D;
+      double b1h = (filter == kHiShelf) ? -2.0 * (g * g * b * b - g0 * g0) / D
+                                        : 2.0 * (g * g * b * b - g0 * g0) / D;
       double b2h = (g * g * b * b - 2 * g0 * g * b * si + g0 * g0) / D;
-      double a1h = (filter == kHiShelf) ? -2.0 * (b * b - 1.0) / D : 2.0 * (b * b - 1.0) / D;
+      double a1h = (filter == kHiShelf) ? -2.0 * (b * b - 1.0) / D
+                                        : 2.0 * (b * b - 1.0) / D;
       double a2h = (b * b - 2 * b * si + 1.0) / D;
 
-      // High-order HP/LP shelving filter coefficients can be expressed as 2nd-order sections (SOS)
-      // i.e. biquads
-      (coeffs)[i - 1].DF2TBiquad(b0h,  // b0
-                                 b1h,  // b1
-                                 b2h,  // b2
-                                 1.0,  // a0
-                                 a1h,  // a1
-                                 a2h); // a2
-    }
-    else if (filter == kParametric)
-    { // Compute 4th order sections
+      // High-order HP/LP shelving filter coefficients can be expressed as
+      // 2nd-order sections (SOS) i.e. biquads
+      (coeffs)[i - 1].DF2TBiquad(b0h, // b0
+          b1h, // b1
+          b2h, // b2
+          1.0, // a0
+          a1h, // a1
+          a2h); // a2
+    } else if (filter == kParametric) { // Compute 4th order sections
 
       double b0 = (g * g * b * b + g0 * g0 + 2 * g * g0 * si * b) / D;
       double b1 = -4 * c0 * (g0 * g0 + g * g0 * si * b) / D;
@@ -358,22 +336,23 @@ bool Butterworth::coefficientsEQ(FILTER_TYPE filter, double fs, double f1,
       double a3 = -4 * c0 * (1 - si * b) / D;
       double a4 = (b * b - 2 * si * b + 1) / D;
 
-      // Parameteric EQ filter coefficients (like band pass & band stop) are twice the
-      // specified filter order. This is normal and by design. Unlike bandpass & bandstop
-      // though, the realization via the Bilinear Transform (BLT) renders 4th order sections.
-      // So rather than split 4th order sections into 2nd order sections (biquads),
-      // with fancy polynomial root factoring, we use them as is.
-      // There are no stability issues for sections this size.
-      (coeffs)[i - 1].DF2TFourthOrderSection(b0,  // b0
-                                             b1,  // b1
-                                             b2,  // b2
-                                             b3,  // b3
-                                             b4,  // b4
-                                             1.0, // a0
-                                             a1,  // a1
-                                             a2,  // a2
-                                             a3,  // a3
-                                             a4); // a4
+      // Parameteric EQ filter coefficients (like band pass & band stop) are
+      // twice the specified filter order. This is normal and by design. Unlike
+      // bandpass & bandstop though, the realization via the Bilinear Transform
+      // (BLT) renders 4th order sections. So rather than split 4th order
+      // sections into 2nd order sections (biquads), with fancy polynomial root
+      // factoring, we use them as is. There are no stability issues for
+      // sections this size.
+      (coeffs)[i - 1].DF2TFourthOrderSection(b0, // b0
+          b1, // b1
+          b2, // b2
+          b3, // b3
+          b4, // b4
+          1.0, // a0
+          a1, // a1
+          a2, // a2
+          a3, // a3
+          a4); // a4
     }
   }
 
@@ -409,14 +388,12 @@ bool Butterworth::s2Z()
 {
 
   // blt zeros
-  for (uint32_t i = 0; i < numZeros; i++)
-  {
+  for (uint32_t i = 0; i < numZeros; i++) {
     gain /= blt(zeros[i]);
   }
 
   // blt poles
-  for (uint32_t i = 0; i < numPoles; i++)
-  {
+  for (uint32_t i = 0; i < numPoles; i++) {
     gain *= blt(poles[i]);
   }
 
@@ -439,29 +416,25 @@ bool Butterworth::zp2SOS()
   std::complex<double> *polesTempVec = new std::complex<double>[filterOrder];
 
   // Copy
-  for (uint32_t i = 0; i < numZeros; i++)
-  {
+  for (uint32_t i = 0; i < numZeros; i++) {
     zerosTempVec[i] = zeros[i];
   }
 
   // Add zeros at -1, so if S-plane degenerate case where
   // numZeros = 0 will map to -1 in Z-plane.
-  for (uint32_t i = numZeros; i < filterOrder; i++)
-  {
+  for (uint32_t i = numZeros; i < filterOrder; i++) {
     zerosTempVec[i] = std::complex<double>(-1, 0);
   }
 
   // Copy
-  for (uint32_t i = 0; i < numPoles; i++)
-  {
+  for (uint32_t i = 0; i < numPoles; i++) {
     polesTempVec[i] = poles[i];
   }
 
   ba[0] = gain; // store gain
 
   int numSOS = 0;
-  for (uint32_t i = 0; i + 1 < filterOrder; i += 2, numSOS++)
-  {
+  for (uint32_t i = 0; i + 1 < filterOrder; i += 2, numSOS++) {
     ba[4 * numSOS + 1] = -(zerosTempVec[i] + zerosTempVec[i + 1]).real();
     ba[4 * numSOS + 2] = (zerosTempVec[i] * zerosTempVec[i + 1]).real();
     ba[4 * numSOS + 3] = -(polesTempVec[i] + polesTempVec[i + 1]).real();
@@ -469,8 +442,7 @@ bool Butterworth::zp2SOS()
   }
 
   // Odd filter order thus one pair of poles/zeros remains
-  if (filterOrder % 2 == 1)
-  {
+  if (filterOrder % 2 == 1) {
     ba[4 * numSOS + 1] = -zerosTempVec[filterOrder - 1].real();
     ba[4 * numSOS + 2] = ba[4 * numSOS + 4] = 0;
     ba[4 * numSOS + 3] = -polesTempVec[filterOrder - 1].real();
@@ -491,13 +463,12 @@ bool Butterworth::zp2SOS()
 
 void Butterworth::convert2lopass()
 {
-  Wc = f2; // critical frequency
+  Wc = m_f2; // critical frequency
 
   gain *= std::pow(Wc, numPoles);
 
   numZeros = 0; // poles only
-  for (uint32_t i = 0; i < numPoles; i++)
-  { // scale poles by the cutoff Wc
+  for (uint32_t i = 0; i < numPoles; i++) { // scale poles by the cutoff Wc
     poles[i] = Wc * poles[i];
   }
 }
@@ -509,37 +480,32 @@ void Butterworth::convert2lopass()
 
 void Butterworth::convert2hipass()
 {
-  Wc = f2; // Critical frequency
+  Wc = m_f2; // Critical frequency
 
   // Calculate gain
   std::complex<double> prodz(1.0, 0.0);
   std::complex<double> prodp(1.0, 0.0);
 
-  for (uint32_t i = 0; i < numZeros; i++)
-  {
+  for (uint32_t i = 0; i < numZeros; i++) {
     prodz *= -zeros[i];
   }
 
-  for (uint32_t i = 0; i < numPoles; i++)
-  {
+  for (uint32_t i = 0; i < numPoles; i++) {
     prodp *= -poles[i];
   }
 
   gain *= prodz.real() / prodp.real();
 
   // Convert LP poles to HP
-  for (uint32_t i = 0; i < numPoles; i++)
-  {
-    if (std::abs(poles[i]))
-    {
+  for (uint32_t i = 0; i < numPoles; i++) {
+    if (std::abs(poles[i]) > EPSILON) {
       poles[i] = std::complex<double>(Wc) / poles[i]; //  hp_S = Wc / lp_S;
     }
   }
 
   // Init with zeros, no non-zero values to convert
   numZeros = numPoles;
-  for (uint32_t i = 0; i < numZeros; i++)
-  {
+  for (uint32_t i = 0; i < numZeros; i++) {
     zeros[i] = std::complex<double>(0.0);
   }
 }
@@ -554,8 +520,8 @@ void Butterworth::convert2hipass()
 
 void Butterworth::convert2bandpass()
 {
-  bw = f2 - f1;
-  Wc = sqrt(f1 * f2);
+  bw = m_f2 - m_f1;
+  Wc = sqrt(m_f1 * m_f2);
 
   // Calculate bandpass gain
   gain *= std::pow(bw, numPoles - numZeros);
@@ -563,37 +529,34 @@ void Butterworth::convert2bandpass()
   // Convert LP poles to BP: these two sets of for-loops result in an ordered
   // list of poles and their complex conjugates
   std::vector<std::complex<double>> tempPoles;
-  for (uint32_t i = 0; i < numPoles; i++)
-  { // First set of poles + conjugates
-    if (std::abs(poles[i]))
-    {
+  for (uint32_t i = 0; i < numPoles; i++) { // First set of poles + conjugates
+    if (std::abs(poles[i]) > EPSILON) {
       std::complex<double> firstterm = 0.5 * poles[i] * bw;
-      std::complex<double> secondterm = 0.5 * sqrt((bw * bw) * (poles[i] * poles[i]) - 4 * Wc * Wc);
+      std::complex<double> secondterm =
+          0.5 * sqrt((bw * bw) * (poles[i] * poles[i]) - 4 * Wc * Wc);
       tempPoles.push_back(firstterm + secondterm);
     }
   }
 
-  for (uint32_t i = 0; i < numPoles; i++)
-  { // Second set of poles + conjugates
-    if (std::abs(poles[i]))
-    {
+  for (uint32_t i = 0; i < numPoles; i++) { // Second set of poles + conjugates
+    if (std::abs(poles[i]) > EPSILON) {
       std::complex<double> firstterm = 0.5 * poles[i] * bw;
-      std::complex<double> secondterm = 0.5 * sqrt((bw * bw) * (poles[i] * poles[i]) - 4 * Wc * Wc);
+      std::complex<double> secondterm =
+          0.5 * sqrt((bw * bw) * (poles[i] * poles[i]) - 4 * Wc * Wc);
       tempPoles.push_back(firstterm - secondterm); // complex conjugate
     }
   }
 
   // Init zeros, no non-zero values to convert
   numZeros = numPoles;
-  for (uint32_t i = 0; i < numZeros; i++)
-  {
+  for (uint32_t i = 0; i < numZeros; i++) {
     zeros[i] = std::complex<double>(0.0);
   }
 
   // Copy converted poles to output array
   int index = 0;
-  for (std::vector<std::complex<double>>::iterator itr = tempPoles.begin(); itr != tempPoles.end(); itr++)
-  {
+  for (std::vector<std::complex<double>>::iterator itr = tempPoles.begin();
+       itr != tempPoles.end(); itr++) {
     poles[index] = *itr;
     index++;
   }
@@ -610,19 +573,17 @@ void Butterworth::convert2bandpass()
 
 void Butterworth::convert2bandstop()
 {
-  bw = f2 - f1;
-  Wc = sqrt(f1 * f2);
+  bw = m_f2 - m_f1;
+  Wc = sqrt(m_f1 * m_f2);
 
   // Compute gain
   std::complex<double> prodz(1.0, 0.0);
   std::complex<double> prodp(1.0, 0.0);
-  for (uint32_t i = 0; i < numZeros; i++)
-  {
+  for (uint32_t i = 0; i < numZeros; i++) {
     prodz *= -zeros[i];
   }
 
-  for (uint32_t i = 0; i < numPoles; i++)
-  {
+  for (uint32_t i = 0; i < numPoles; i++) {
     prodp *= -poles[i];
   }
 
@@ -631,37 +592,34 @@ void Butterworth::convert2bandstop()
   // Convert LP zeros to band stop
   numZeros = numPoles;
   std::vector<std::complex<double>> ztmp;
-  for (uint32_t i = 0; i < numZeros; i++)
-  {
+  for (uint32_t i = 0; i < numZeros; i++) {
     ztmp.push_back(std::complex<double>(0.0, Wc));
     ztmp.push_back(std::complex<double>(0.0, -Wc)); // complex conjugate
   }
 
   std::vector<std::complex<double>> tempPoles;
-  for (uint32_t i = 0; i < numPoles; i++)
-  { // First set of poles + conjugates
-    if (std::abs(poles[i]))
-    {
+  for (uint32_t i = 0; i < numPoles; i++) { // First set of poles + conjugates
+    if (std::abs(poles[i]) > EPSILON) {
       std::complex<double> term1 = 0.5 * bw / poles[i];
-      std::complex<double> term2 = 0.5 * sqrt((bw * bw) / (poles[i] * poles[i]) - (4 * Wc * Wc));
+      std::complex<double> term2 =
+          0.5 * sqrt((bw * bw) / (poles[i] * poles[i]) - (4 * Wc * Wc));
       tempPoles.push_back(term1 + term2);
     }
   }
 
-  for (uint32_t i = 0; i < numPoles; i++)
-  { // Second set of poles + conjugates
-    if (std::abs(poles[i]))
-    {
+  for (uint32_t i = 0; i < numPoles; i++) { // Second set of poles + conjugates
+    if (std::abs(poles[i]) > EPSILON) {
       std::complex<double> term1 = 0.5 * bw / poles[i];
-      std::complex<double> term2 = 0.5 * sqrt((bw * bw) / (poles[i] * poles[i]) - (4 * Wc * Wc));
+      std::complex<double> term2 =
+          0.5 * sqrt((bw * bw) / (poles[i] * poles[i]) - (4 * Wc * Wc));
       tempPoles.push_back(term1 - term2); // complex conjugate
     }
   }
 
   // Copy converted zeros to output array
   int index = 0;
-  for (std::vector<std::complex<double>>::iterator itr = ztmp.begin(); itr != ztmp.end(); itr++)
-  {
+  for (std::vector<std::complex<double>>::iterator itr = ztmp.begin();
+       itr != ztmp.end(); itr++) {
     zeros[index] = *itr;
     index++;
   }
@@ -669,8 +627,8 @@ void Butterworth::convert2bandstop()
 
   // Copy converted poles to output array
   index = 0;
-  for (std::vector<std::complex<double>>::iterator itr = tempPoles.begin(); itr != tempPoles.end(); itr++)
-  {
+  for (std::vector<std::complex<double>>::iterator itr = tempPoles.begin();
+       itr != tempPoles.end(); itr++) {
     poles[index] = *itr;
     index++;
   }

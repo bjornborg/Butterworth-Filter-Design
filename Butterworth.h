@@ -31,10 +31,9 @@
 
 #include <complex>
 
-class Butterworth
-{
+class Butterworth {
 
-public:
+ public:
   Butterworth()
   {
   }
@@ -42,7 +41,8 @@ public:
   {
   }
 
-  static std::vector<std::complex<double>> prototypeAnalogLowPass(uint32_t filterOrder);
+  static std::vector<std::complex<double>> prototypeAnalogLowPass(
+      uint32_t filterOrder);
 
   bool loPass(double fs, double f1, double f2, uint32_t filterOrder,
       std::vector<Biquad> &coeffs, double &overallGain)
@@ -59,13 +59,15 @@ public:
   bool bandPass(double fs, double f1, double f2, uint32_t filterOrder,
       std::vector<Biquad> &coeffs, double &overallGain)
   {
-    return coefficients(kBandPass, fs, f1, f2, filterOrder, coeffs, overallGain);
+    return coefficients(
+        kBandPass, fs, f1, f2, filterOrder, coeffs, overallGain);
   }
 
   bool bandStop(double fs, double f1, double f2, uint32_t filterOrder,
       std::vector<Biquad> &coeffs, double &overallGain)
   {
-    return coefficients(kBandStop, fs, f1, f2, filterOrder, coeffs, overallGain);
+    return coefficients(
+        kBandStop, fs, f1, f2, filterOrder, coeffs, overallGain);
   }
 
   enum FILTER_TYPE
@@ -75,33 +77,37 @@ public:
     kBandPass = 10002,
     kBandStop = 10003,
     kLoShelf = 10004,
-    kHiShelf = 10005,   // high order EQ
+    kHiShelf = 10005, // high order EQ
     kParametric = 10006 // high order EQ
   };
 
   //******************************************************************************
 
   // generic coeffs
-  bool coefficients(FILTER_TYPE filter, const double fs, const double freq1_cutoff, const double freq2_cutoff, const int filterOrder,
-      std::vector<Biquad> &coeffs, double &overallGain);
+  bool coefficients(FILTER_TYPE filter, double const fs,
+      double const freq1_cutoff, double const freq2_cutoff,
+      int const filterOrder, std::vector<Biquad> &coeffs, double &overallGain);
 
   // high order EQ
-  bool coefficientsEQ(FILTER_TYPE filter, const double fs, const double f1, const double f2, const int filterOrder,
-      std::vector<Biquad> &coeffs, double overallGain);
+  bool coefficientsEQ(FILTER_TYPE filter, double const fs, double const f1,
+      double const f2, int const filterOrder, std::vector<Biquad> &coeffs,
+      double overallGain);
 
-private:
+ private:
   double blt(std::complex<double> &sz);
   bool s2Z();
   bool zp2SOS();
 
-  // Private helper methods to convert the lowpass analog prototype to the desired filter type
+  // Private helper methods to convert the lowpass analog prototype to the
+  // desired filter type
   void convert2lopass();
   void convert2hipass();
   void convert2bandpass();
   void convert2bandstop();
 
   // Internal state used during computation of coefficients
-  double f1, f2;
+  double m_f1;
+  double m_f2;
 
   uint32_t numPoles, numZeros;
   std::vector<std::complex<double>> zeros;
